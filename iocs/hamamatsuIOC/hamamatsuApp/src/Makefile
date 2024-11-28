@@ -22,7 +22,7 @@ ifeq ($(OS_CLASS), Linux)
 endif
 ifeq ($(OS_CLASS), WIN32)
   PROD_LIBS += dcamapi
-  dcamapi_DIR = C:/Hamamatsu/dcamsdk4/lib/win64
+  dcamapi_DIR = $(DCAM_API_DIR)/lib/win64
 endif
 
 include $(ADCORE)/ADApp/commonDriverMakefile
