@@ -1,0 +1,253 @@
+#=================================================================#
+# Template file: hamamatsu.template
+# Database for the records specific to the simulated detector driver
+# Feb. 9, 2024
+
+include "ADBase.template"
+
+# Redefine the color mode choices from ADBase.template to only have those that the hamamatsu
+# driver supports.  Keep the same values (xxVL), but change the menu numbers.
+
+record(mbbo, "$(P)$(R)ColorMode")
+{
+   field(ZRST, "Mono")
+   field(ZRVL, "0")
+   field(ONST, "RGB1")
+   field(ONVL, "2")
+   field(TWST, "RGB2")
+   field(TWVL, "3")
+   field(THST, "RGB3")
+   field(THVL, "4")
+   field(FRST, "")
+   field(FVST, "")
+   field(SXST, "")
+   field(SVST, "")
+   field(EIST, "")
+}
+
+record(mbbi, "$(P)$(R)ColorMode_RBV")
+{
+   field(ZRST, "Mono")
+   field(ZRVL, "0")
+   field(ONST, "RGB1")
+   field(ONVL, "2")
+   field(TWST, "RGB2")
+   field(TWVL, "3")
+   field(THST, "RGB3")
+   field(THVL, "4")
+   field(FRST, "")
+   field(FVST, "")
+   field(SXST, "")
+   field(SVST, "")
+   field(EIST, "")
+}
+
+
+###################################################################################
+#hamamatsu specific records
+record(bo, "$(P)$(R)HamaRegionReset")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaRegionReset")
+   info(asyn:READBACK, "1")
+}
+
+record(mbbo, "$(P)$(R)HamaTriggerSource")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerSource")
+   field(ZRST, "Internal")
+   field(ZRVL, "0")
+   field(ONST, "External")
+   field(ONVL, "1")
+   field(TWST, "Software")
+   field(TWVL, "2")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)HamaTriggerSource_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerSource")
+   field(ZRST, "Internal")
+   field(ZRVL, "0")
+   field(ONST, "External")
+   field(ONVL, "1")
+   field(TWST, "Software")
+   field(TWVL, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)HamaTriggerMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerMode")
+   field(ZRST, "Normal")
+   field(ZRVL, "0")
+   field(ONST, "Start")
+   field(ONVL, "1")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)HamaTriggerMode_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerMode")
+   field(ZRST, "Normal")
+   field(ZRVL, "0")
+   field(ONST, "Start")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)HamaTriggerActive")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerActive")
+   field(ZRST, "Edge")
+   field(ZRVL, "0")
+   field(ONST, "Level")
+   field(ONVL, "1")
+   field(TWST, "Syncreadout")
+   field(TWVL, "2")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)HamaTriggerActive_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerActive")
+   field(ZRST, "Edge")
+   field(ZRVL, "0")
+   field(ONST, "Level")
+   field(ONVL, "1")
+   field(TWST, "Syncreadout")
+   field(TWVL, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)HamaTriggerPolarity")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerPolarity")
+   field(ZRST, "Negative")
+   field(ZRVL, "0")
+   field(ONST, "Positive")
+   field(ONVL, "1")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)HamaTriggerPolarity_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerPolarity")
+   field(ZRST, "Negative")
+   field(ZRVL, "0")
+   field(ONST, "Positive")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)HamaFireTrigger")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaFireTrigger")
+   info(asyn:READBACK, "1")
+}
+
+record(ao, "$(P)$(R)HamaTriggerTimes")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerTimes")
+   field(PREC, "0")
+   info(autosaveFields, "VAL")
+}
+
+record(ai, "$(P)$(R)HamaTriggerTimes_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerTimes")
+   field(PREC, "0")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)HamaTriggerDelay")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynFloat64")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerDelay")
+   field(PREC, "6")
+   info(autosaveFields, "VAL")
+}
+
+record(ai, "$(P)$(R)HamaTriggerDelay_RBV")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerDelay")
+   field(PREC, "6")
+   field(SCAN, "I/O Intr")
+}
+
+record(waveform, "$(P)$(R)HamaSensorCoolerStatus_RBV")
+{
+   field(DTYP, "asynOctetRead")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaSensorCoolerStatus")
+   field(FTVL,  "CHAR")
+   field(NELM, "256")
+   field(PINI, "YES")
+   #field(VAL,  "Start")
+   field(SCAN, "I/O Intr")
+   
+}
+
+record(waveform, "$(P)$(R)HamaSensorTemperature_RBV")
+{
+   field(DTYP, "asynOctetRead")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaSensorTemperature")
+   field(FTVL,  "CHAR")
+   field(NELM, "256")
+   field(PINI, "YES")
+   #field(VAL,  "Start")
+   field(SCAN, "I/O Intr")
+   
+}
+
+record(bo, "$(P)$(R)HamaCoolerUpdate")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaCoolerUpdate")
+   info(asyn:READBACK, "1")
+}
+
+record(mbbo, "$(P)$(R)HamaReadoutSpeed")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaReadoutSpeed")
+   field(ZRST, "1")
+   field(ZRVL, "1")
+   field(ONST, "2")
+   field(ONVL, "2")
+   field(VAL,  "2")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)HamaReadoutSpeed_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaReadoutSpeed")
+   field(ZRST, "1")
+   field(ZRVL, "1")
+   field(ONST, "2")
+   field(ONVL, "2")
+   field(SCAN, "I/O Intr")
+}
