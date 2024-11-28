@@ -26,14 +26,12 @@ LIB_SRCS += common.cpp
 LIB_LIBS += dcamapi
 ifeq ($(OS_CLASS), Linux)
   dcamapi_DIR = /usr/local/lib
-  dcamapi_DIR += /usr/local/hamamatsu_dcam/api
 endif
 ifeq ($(OS_CLASS), WIN32)
   dcamapi_DIR = $(DCAM_API_DIR)/lib/win64
 endif
 
 DBD += hamamatsuSupport.dbd
-
 
 include $(ADCORE)/ADApp/commonLibraryMakefile
 
