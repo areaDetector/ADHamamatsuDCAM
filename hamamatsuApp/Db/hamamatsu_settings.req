@@ -1,1 +1,8 @@
 file "ADBase_settings.req", P=$(P), R=$(R)
+$(P)$(R)HamaTriggerSource
+$(P)$(R)HamaTriggerMode
+$(P)$(R)HamaTriggerActive
+$(P)$(R)HamaTriggerPolarity
+$(P)$(R)HamaTriggerTimes
+$(P)$(R)HamaTriggerDelay
+$(P)$(R)HamaReadoutSpeed
