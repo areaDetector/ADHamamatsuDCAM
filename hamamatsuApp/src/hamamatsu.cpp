@@ -891,36 +891,8 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
         callParamCallbacks();
     }
     
-    else if (function ==HamaCoolerUpdate) {
-        //get cooler information
-        double tempCoolerStatus; 
-        err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORCOOLERSTATUS, &tempCoolerStatus);
-        //setStringParam (HamaSensorCoolerStatus, std::to_string(tempCoolerStatus).c_str() );
-    
-        char text[64];
-        DCAMPROP_VALUETEXT valueText;
-        memset( &valueText, 0, sizeof(valueText) );
-        valueText.cbSize    = sizeof(valueText);
-        valueText.iProp    = DCAM_IDPROP_SENSORCOOLERSTATUS;
-        valueText.value    = tempCoolerStatus;
-        valueText.text    = text;
-    
-        err = dcamprop_getvaluetext( hdcam, &valueText );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORCOOLERSTATUS" );
-            setStringParam (HamaSensorCoolerStatus, "Unknown" );
-        } else {
-            setStringParam (HamaSensorCoolerStatus, valueText.text );
-        }
-        double temperature; 
-        err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORTEMPERATURE, &temperature);
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORTEMPERATURE" );
-            setStringParam (HamaSensorTemperature, "Unknown" );
-        } else {
-            setStringParam (HamaSensorTemperature, std::to_string(temperature).c_str() );
-        }
-        callParamCallbacks();
+    else if (function ==ADReadStatus) {
+        updateCoolerInfo();
     }
     
     else if (function == HamaReadoutSpeed) { 
@@ -944,7 +916,6 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
             printf("\nReadout speed: %f",readSpeed);
             setIntegerParam(HamaReadoutSpeed, (int)readSpeed);
         }
-        callParamCallbacks();
     }
     
     else {
@@ -1020,6 +991,40 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
               "\n%s:writeFloat64: function=%d, value=%f\n",
               driverName, function, value);
     return status;
+}
+
+void hamamatsu::updateCoolerInfo(void)
+{
+    double tempCoolerStatus; 
+    DCAMERR err;
+
+    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORCOOLERSTATUS, &tempCoolerStatus);
+    //setStringParam (HamaSensorCoolerStatus, std::to_string(tempCoolerStatus).c_str() );
+
+    char text[64];
+    DCAMPROP_VALUETEXT valueText;
+    memset( &valueText, 0, sizeof(valueText) );
+    valueText.cbSize    = sizeof(valueText);
+    valueText.iProp    = DCAM_IDPROP_SENSORCOOLERSTATUS;
+    valueText.value    = tempCoolerStatus;
+    valueText.text    = text;
+    valueText.textbytes = sizeof(text);
+    err = dcamprop_getvaluetext( hdcam, &valueText );
+    if( failed(err) ) {
+        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORCOOLERSTATUS" );
+        setStringParam (HamaSensorCoolerStatus, "Unknown" );
+    } else {
+        setStringParam (HamaSensorCoolerStatus, valueText.text );
+    }
+    
+    double temperature; 
+    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORTEMPERATURE, &temperature);
+    if( failed(err) ) {
+        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORTEMPERATURE" );
+        setDoubleParam (ADTemperatureActual, 0. );
+    } else  {
+        setDoubleParam (ADTemperatureActual, temperature );
+    }
 }
 
 
@@ -1137,8 +1142,6 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     
     //Hamamatsu Cooler parameters
     createParam(HamaSensorCoolerStatusString, asynParamOctet, &HamaSensorCoolerStatus);
-    createParam(HamaSensorTemperatureString,  asynParamOctet, &HamaSensorTemperature);
-    createParam(HamaCoolerUpdateString,       asynParamInt32, &HamaCoolerUpdate);
     
     createParam(HamaReadoutSpeedString,       asynParamInt32, &HamaReadoutSpeed);
 
@@ -1156,9 +1159,6 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     status |= setDoubleParam(HamaTriggerDelay,0);
     char coolerStatusString [256]= "Unknown";
     status |= setStringParam(HamaSensorCoolerStatus,coolerStatusString);
-    char coolerTemperatureString [256]= "Unknown";
-    status |= setStringParam(HamaSensorTemperature,coolerTemperatureString);
-    status |= setIntegerParam(HamaCoolerUpdate,0);
     status |= setIntegerParam(HamaReadoutSpeed,2);
     
     if (status) {
@@ -1277,37 +1277,9 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
         printf( "\nInt 16\n");
         err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16 );   
     }
-        
-    //get cooler information
-    double tempCoolerStatus; 
-    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORCOOLERSTATUS, &tempCoolerStatus);
-    //setStringParam (HamaSensorCoolerStatus, std::to_string(tempCoolerStatus).c_str() );
-
-    char text[64];
-    DCAMPROP_VALUETEXT valueText;
-    memset( &valueText, 0, sizeof(valueText) );
-    valueText.cbSize    = sizeof(valueText);
-    valueText.iProp    = DCAM_IDPROP_SENSORCOOLERSTATUS;
-    valueText.value    = tempCoolerStatus;
-    valueText.text    = text;
-    valueText.textbytes = sizeof(text);
-    err = dcamprop_getvaluetext( hdcam, &valueText );
-    if( failed(err) ) {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORCOOLERSTATUS" );
-        setStringParam (HamaSensorCoolerStatus, "Unknown" );
-    } else {
-        setStringParam (HamaSensorCoolerStatus, valueText.text );
-    }
     
-    double temperature; 
-    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORTEMPERATURE, &temperature);
-    if( failed(err) ) {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORTEMPERATURE" );
-        setStringParam (HamaSensorTemperature, "Unknown" );
-    } else  {
-        setStringParam (HamaSensorTemperature, std::to_string(temperature).c_str() );
-    }
-        
+    updateCoolerInfo();
+         
     //get readout speed
     double readSpeed;
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_READOUTSPEED, &readSpeed );
