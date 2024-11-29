@@ -21,5 +21,5 @@ driver, not for issues with the cameras or the DCAM library.
 Those issues should be reported to  Hamamatsu through their normal customer support mechanisms.
 
 Additional information:
-* [Documentation]((https://areadetector.github.io/areaDetector/ADHamamatsuDCAM/ADSpinnaker.html)).
+* [Documentation](https://areadetector.github.io/areaDetector/ADHamamatsuDCAM/ADHamamatsuDCAM.html).
 * [Release notes](RELEASE.md).
