@@ -40,8 +40,6 @@ protected:
     int HamaTriggerTimes;
     int HamaTriggerDelay;
     int HamaSensorCoolerStatus;
-    int HamaSensorTemperature;
-    int HamaCoolerUpdate;
     int HamaReadoutSpeed;
 
 private:
@@ -49,6 +47,7 @@ private:
     BOOL copy_targetarea( HDCAM hdcam, int32 iFrame, void* buf, int32 rowbytes, int32 ox, int32 oy, int32 cx, int32 cy );
     void get_image_information( HDCAM hdcam, int32& pixeltype, int32& width, int32& rowbytes, int32& height );
     void sample_access_image( HDCAM hdcam );
+    void updateCoolerInfo(void);
 
     /* Our data */
     epicsEventId startEventId_;
