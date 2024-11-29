@@ -163,16 +163,15 @@ record(bo, "$(P)$(R)HamaFireTrigger")
    info(asyn:READBACK, "1")
 }
 
-record(ao, "$(P)$(R)HamaTriggerTimes")
+record(longout, "$(P)$(R)HamaTriggerTimes")
 {
    field(PINI, "YES")
    field(DTYP, "asynInt32")
    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerTimes")
-   field(PREC, "0")
    info(autosaveFields, "VAL")
 }
 
-record(ai, "$(P)$(R)HamaTriggerTimes_RBV")
+record(longin, "$(P)$(R)HamaTriggerTimes_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerTimes")
@@ -206,26 +205,6 @@ record(waveform, "$(P)$(R)HamaSensorCoolerStatus_RBV")
    field(PINI, "YES")
    #field(VAL,  "Start")
    field(SCAN, "I/O Intr")
-   
-}
-
-record(waveform, "$(P)$(R)HamaSensorTemperature_RBV")
-{
-   field(DTYP, "asynOctetRead")
-   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaSensorTemperature")
-   field(FTVL,  "CHAR")
-   field(NELM, "256")
-   field(PINI, "YES")
-   #field(VAL,  "Start")
-   field(SCAN, "I/O Intr")
-   
-}
-
-record(bo, "$(P)$(R)HamaCoolerUpdate")
-{
-   field(DTYP, "asynInt32")
-   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaCoolerUpdate")
-   info(asyn:READBACK, "1")
 }
 
 record(mbbo, "$(P)$(R)HamaReadoutSpeed")
@@ -233,9 +212,9 @@ record(mbbo, "$(P)$(R)HamaReadoutSpeed")
    field(PINI, "YES")
    field(DTYP, "asynInt32")
    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaReadoutSpeed")
-   field(ZRST, "1")
+   field(ZRST, "Slowest")
    field(ZRVL, "1")
-   field(ONST, "2")
+   field(ONST, "Fastest")
    field(ONVL, "2")
    field(VAL,  "2")
    info(autosaveFields, "VAL")
@@ -245,9 +224,9 @@ record(mbbi, "$(P)$(R)HamaReadoutSpeed_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaReadoutSpeed")
-   field(ZRST, "1")
+   field(ZRST, "Slowest")
    field(ZRVL, "1")
-   field(ONST, "2")
+   field(ONST, "Fastest")
    field(ONVL, "2")
    field(SCAN, "I/O Intr")
 }
