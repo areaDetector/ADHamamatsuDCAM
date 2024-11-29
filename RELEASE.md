@@ -10,6 +10,9 @@ files respectively, in the configure/ directory of the appropriate release of th
 Release Notes
 =============
 
-R240200 (February 9, 2024)
+R1-0 (November XXX, 2024)
 ===================
 * Initial release
+  - This release is based on a prototype driver written by XXX at Hamamatsu, which was based on ADSimDetector.
+  - Mark Rivers modified the driver to remove the residual code from ADSimDetector, improve the medm screen, etc.
+ 
