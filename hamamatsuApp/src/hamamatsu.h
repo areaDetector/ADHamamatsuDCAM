@@ -67,4 +67,4 @@ private:
 #define HamaTriggerTimesString        "HamaTriggerTimes"
 #define HamaTriggerDelayString        "HamaTriggerDelay"
 #define HamaSensorCoolerStatusString  "HamaSensorCoolerStatus"
-##define HamaReadoutSpeedString        "HamaReadoutSpeed"
+#define HamaReadoutSpeedString        "HamaReadoutSpeed"
