@@ -1,3 +1,5 @@
+/* For end use and not for commercial purposes */
+
 #include <epicsEvent.h>
 #include "ADDriver.h"
 
@@ -65,10 +67,4 @@ private:
 #define HamaTriggerTimesString        "HamaTriggerTimes"
 #define HamaTriggerDelayString        "HamaTriggerDelay"
 #define HamaSensorCoolerStatusString  "HamaSensorCoolerStatus"
-#define HamaSensorTemperatureString   "HamaSensorTemperature"
-#define HamaCoolerUpdateString        "HamaCoolerUpdate"
-#define HamaReadoutSpeedString        "HamaReadoutSpeed"
-
-
-
-
+##define HamaReadoutSpeedString        "HamaReadoutSpeed"
