@@ -302,6 +302,7 @@ void hamamatsu::hamaAcquire()
     DCAMERR err;
     const char *functionName = "hamaAcquire";
     double exposureTime;
+    //double acquirePeriod;
     int status = asynSuccess;
     int binX, binY, minX, minY, sizeX, sizeY;
     int acquire=0;
@@ -333,6 +334,18 @@ void hamamatsu::hamaAcquire()
         err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_EXPOSURETIME, &exposureTime );
         printf("\nexposure time %f", exposureTime);
         setDoubleParam(ADAcquireTime, exposureTime);
+
+        /*
+        getDoubleParam(ADAcquirePeriod,     &acquirePeriod);
+        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_INTERNALFRAMERATE, &acquirePeriod );
+        if( failed(err) )
+        {
+            dcamcon_show_dcamerr( hdcam, err, "dcamprop_setgetvalue() for DCAM_IDPROP_INTERNALFRAMERATE" );
+        }
+        printf("\nacquire period %f", acquirePeriod);
+        setDoubleParam(ADAcquirePeriod, acquirePeriod);
+        */
+
         double tempHPOS=(double)minX;
         err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYHPOS, &tempHPOS );
         if( failed(err) ) {
