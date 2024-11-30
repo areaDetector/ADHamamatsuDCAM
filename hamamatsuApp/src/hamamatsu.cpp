@@ -6,6 +6,8 @@
  *
  * Created:  February 9, 2024
  *
+ * For end use and not for commercial purposes
+ *
  */
 
 #include <stddef.h>
