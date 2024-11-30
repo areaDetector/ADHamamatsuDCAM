@@ -10,7 +10,7 @@ The driver should work with any Hamamatsu camera that is supported by the DCAM l
 It has been tested with the [Orca Fire](https://www.hamamatsu.com/us/en/product/cameras/cmos-cameras/C16240-20UP.html)
 camera on Windows and Ubuntu 22.
 
-The Orca Fire](https://www.hamamatsu.com/us/en/product/cameras/cmos-cameras/C16240-20UP.html)
+The [Orca Fire](https://www.hamamatsu.com/us/en/product/cameras/cmos-cameras/C16240-20UP.html)
 is a [CoaXPress](https://en.wikipedia.org/wiki/CoaXPress) camera, using CXP-6 X4.
 It is 4432x2369 pixels, and can run at115 frames/s in 16-bit mode.
 While this camera uses CoaXPress, it is not fully GenICam compliant.
