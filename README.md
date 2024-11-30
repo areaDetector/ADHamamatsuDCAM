@@ -21,7 +21,7 @@ example those supported by ADEuresys.
 
 The Github issues in this repository should only be used for issues specific to the EPICS
 driver, not for issues with the cameras or the DCAM library.
-Those issues should be reported to  Hamamatsu through their normal customer support mechanisms.
+Those issues should be reported to  Hamamatsu through their normal customer support channels.
 
 Additional information:
 * [Documentation](https://areadetector.github.io/areaDetector/ADHamamatsuDCAM/ADHamamatsuDCAM.html).
