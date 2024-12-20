@@ -440,7 +440,8 @@ void hamamatsu::hamaAcquire()
         if( failed(err) ) {
             dcamcon_show_dcamerr( hdcam, err, "dcamwait_open()" );
         } else {
-            HDCAMWAIT hwait = waitopen.hwait;
+            //HDCAMWAIT hwait = waitopen.hwait;
+            hwait = waitopen.hwait;
     
             // allocate buffer
             int32 number_of_buffer = 10;
@@ -479,6 +480,7 @@ void hamamatsu::hamaAcquire()
                                 setIntegerParam(ADAcquire, acquire);
                                 asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
                                       "%s:%s: acquisition completed\n", driverName, functionName);
+                                
                                 
                                 dcamcap_stop( hdcam );
                                 
@@ -701,10 +703,29 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
         if (!value && acquiring) {
             /* This was a command to stop acquisition */
             /* Send the stop event */
-            epicsEventSignal(stopEventId_); 
+            //epicsEventSignal(stopEventId_); 
             // stop capture
             printf( "Stop Capture pressed\n" );
+            
+            
+            //abort any waiting
+            dcamwait_abort( hwait);
             dcamcap_stop( hdcam );    
+            
+             // release buffer
+            dcambuf_release( hdcam );
+
+            // close wait handle
+            dcamwait_close( hwait );
+            /* Send the stop event */
+            epicsEventSignal(stopEventId_);
+            callParamCallbacks();
+
+            //this->unlock();
+            //status = epicsEventWaitWithTimeout(stopEventId_, MIN_DELAY);
+            //callParamCallbacks();
+            //this->lock();
+            //epicsThreadSleep(0.01);
         }
 
     } else if (function == NDDataType) {

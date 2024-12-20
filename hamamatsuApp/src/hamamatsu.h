@@ -56,6 +56,7 @@ private:
     epicsEventId stopEventId_;
     HDCAM    hdcam;
     DCAMAPI_INIT    apiinit;
+    HDCAMWAIT    hwait;
 };
 
 #define HamaRegionResetString         "HamaRegionReset"
