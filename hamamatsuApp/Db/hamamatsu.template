@@ -175,7 +175,6 @@ record(longin, "$(P)$(R)HamaTriggerTimes_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))HamaTriggerTimes")
-   field(PREC, "0")
    field(SCAN, "I/O Intr")
 }
 
