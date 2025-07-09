@@ -39,7 +39,7 @@ asynSetMinTimerPeriod(0.001)
 #epicsEnvSet("EPICS_CA_MAX_ARRAY_BYTES", "10000000")
 
 # Create a hamamatsu driver
-# hamamatsuConfig(const char *portName, int maxBuffers, int maxMemory, int priority, int stackSize)
+# hamamatsuConfig(const char *portName, int camIndex, int maxBuffers, int maxMemory, int priority, int stackSize)
 hamamatsuConfig("$(PORT)", 0, 0)
 # To have the rate calculation use a non-zero smoothing factor use the following line
 #dbLoadRecords("hamamatsu.template",     "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1,RATE_SMOOTH=0.2")
