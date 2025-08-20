@@ -440,8 +440,8 @@ void hamamatsu::hamaAcquire()
         if( failed(err) ) {
             dcamcon_show_dcamerr( hdcam, err, "dcamwait_open()" );
         } else {
-            //HDCAMWAIT hwait = waitopen.hwait;
-            hwait = waitopen.hwait;
+            HDCAMWAIT hwait = waitopen.hwait;
+            //hwait = waitopen.hwait;
     
             // allocate buffer
             int32 number_of_buffer = 10;
@@ -709,17 +709,17 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
             
             
             //abort any waiting
-            dcamwait_abort( hwait);
+            //dcamwait_abort( hwait);
             dcamcap_stop( hdcam );    
             
              // release buffer
             dcambuf_release( hdcam );
 
             // close wait handle
-            dcamwait_close( hwait );
+            //dcamwait_close( hwait );
             /* Send the stop event */
-            epicsEventSignal(stopEventId_);
-            callParamCallbacks();
+            //epicsEventSignal(stopEventId_);
+            //callParamCallbacks();
 
             //this->unlock();
             //status = epicsEventWaitWithTimeout(stopEventId_, MIN_DELAY);
@@ -1010,7 +1010,18 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
         }
         callParamCallbacks();
     }
-
+    /* NEW: Changing exposure time (AcquireTime) live */
+    else if (function == ADAcquireTime) {
+        double exposure = value;
+        err = dcamprop_setgetvalue(hdcam, DCAM_IDPROP_EXPOSURETIME, &exposure);
+        if (failed(err)) {
+            dcamcon_show_dcamerr(hdcam, err, "DCAM_IDPROP_EXPOSURETIME");
+        } else {
+            setDoubleParam(ADAcquireTime, exposure); // Store actual value applied
+            printf("\nExposure after set: %f", exposure);
+        }
+        callParamCallbacks();
+    }
     else if ((function < FIRST_HAMA_DETECTOR_PARAM)) {
         /* This parameter belongs to a base class call its method */
         status = ADDriver::writeFloat64(pasynUser, value);
