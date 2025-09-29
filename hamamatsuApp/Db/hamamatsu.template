@@ -229,3 +229,15 @@ record(mbbi, "$(P)$(R)HamaReadoutSpeed_RBV")
    field(ONVL, "2")
    field(SCAN, "I/O Intr")
 }
+
+record(mbbi, "$(P)$(R)HamaIsAlive_RBV") {
+   field(DTYP, "asynInt32")
+   field(ZRST, "OFFLINE")
+   field(ZRVL, "1")
+   field(ONST, "ONLINE")
+   field(ONVL, "2")
+   field(TWST, "ERROR")
+   field(TWVL, "3")
+   field(SCAN, "I/O Intr")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))DCAM_IDPROP_SYSTEM_ALIVE")
+}
