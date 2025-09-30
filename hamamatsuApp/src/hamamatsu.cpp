@@ -66,6 +66,22 @@ static void hamaTaskC(void *drvPvt)
     pPvt->hamaAcquire();
 }
 
+void hamamatsu::isSysAlive()
+{
+    double readVal;
+    DCAMERR err;
+
+    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SYSTEM_ALIVE, &readVal );
+    if( failed(err) )
+    {
+        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:SYSTEM_ALIVE" );
+        return;
+    }
+
+    setIntegerParam(HamaSystemAlive, readVal);
+
+}
+
 //Hamamatsu functions
 BOOL hamamatsu::copy_targetarea( HDCAM hdcam, int32 iFrame, void* buf, int32 rowbytes, int32 ox, int32 oy, int32 cx, int32 cy )
 {
@@ -929,6 +945,7 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
     
     else if (function ==ADReadStatus) {
         updateCoolerInfo();
+        this->isSysAlive();
     }
     
     else if (function == HamaReadoutSpeed) { 
@@ -1191,6 +1208,7 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     createParam(HamaSensorCoolerStatusString, asynParamOctet, &HamaSensorCoolerStatus);
     
     createParam(HamaReadoutSpeedString,       asynParamInt32, &HamaReadoutSpeed);
+    createParam(HamaSystemAliveString,        asynParamInt32, &HamaSystemAlive);
 
     /* Set some default values for parameters 
     */
