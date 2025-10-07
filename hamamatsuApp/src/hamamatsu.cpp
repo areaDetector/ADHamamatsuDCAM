@@ -72,13 +72,94 @@ void hamamatsu::isSysAlive()
     DCAMERR err;
 
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SYSTEM_ALIVE, &readVal );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:SYSTEM_ALIVE" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "IDPROP:SYSTEM_ALIVE") )
         return;
-    }
 
     setIntegerParam(HamaSystemAlive, readVal);
+
+}
+
+void hamamatsu::getErrString(HDCAM handle, DCAMERR err, char* buf, unsigned int bufsize) {
+
+    DCAMDEV_STRING param;
+    memset( &param, 0, sizeof(param) );
+    param.size = sizeof(param);
+    param.text = buf;
+    param.textbytes = bufsize;
+    param.iString = err;
+
+    err = dcamdev_getstring( handle, &param );
+
+}
+
+/** If DCAMERR has error, print error string and return true. Otherwise return false.
+  * \param[in] functionName Name of function calling this. Will be printed along with driver name in error message.
+  * \param[in] err DCAMERR structure from the operation to be checked.
+  * \param[in] paramName Parameter name to be printed in error message. */
+inline const bool hamamatsu::checkErrAndPrint(const char* functionName, DCAMERR err, const char* paramName, ...) {
+
+    char str[256];
+    char operation[256];
+
+    if (!failed(err))
+        return false;
+
+    va_list args;
+    va_start(args, paramName);
+    epicsVsnprintf(operation, sizeof(operation), paramName, args);
+    va_end(args);
+
+    hamamatsu::getErrString(this->hdcam, err, str, 256);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
+        "%s:%s: Error with operation %s. Error code: 0x%x, error string: %s\n",
+        driverName, functionName, operation, err, str);
+
+    return true;
+
+}
+
+/** Calls setgetvalue for given property. If error happens, report it through hamamatsu::checkErrAndPrint.
+  * \param[in] iProp Hamamatsu dcam property to be set.
+  * \param[inout] pValue Pointer to value which will be set. Pointer will also point to new value gotten from device.
+  * \param[in] functionName Name of caller function to be printed in error message.
+  * \param[in] paramName Name of parameter to be printed in error message. */
+inline const bool hamamatsu::checkSetGet(int32 iProp, double* pValue, const char* functionName, const char* paramName) {
+
+    char operation[256];
+    epicsSnprintf(operation, sizeof(operation), "dcamprop_setgetvalue(hdcam, %s, VALUE: %f)", paramName, *pValue);
+
+    DCAMERR err = dcamprop_setgetvalue( this->hdcam, iProp, pValue );
+    return checkErrAndPrint(functionName, err, operation);
+
+}
+
+/** Calls setvalue for given property. If error happens, report it through hamamatsu::checkErrAndPrint.
+  * \param[in] iProp Hamamatsu dcam property to be set.
+  * \param[inout] pValue Value to set property.
+  * \param[in] functionName Name of caller function to be printed in error message.
+  * \param[in] paramName Name of parameter to be printed in error message. */
+inline const bool hamamatsu::checkSet(int32 iProp, double pValue, const char* functionName, const char* paramName) {
+
+    char operation[256];
+    epicsSnprintf(operation, sizeof(operation), "dcamprop_setvalue(hdcam, %s, VALUE: %f)", paramName, pValue);
+
+    DCAMERR err = dcamprop_setvalue( this->hdcam, iProp, pValue );
+    return checkErrAndPrint(functionName, err, operation);
+
+}
+
+/** Calls getvalue for given property. If error happens, report it through hamamatsu::checkErrAndPrint.
+  * \param[in] iProp Hamamatsu dcam property to get value.
+  * \param[inout] pValue Pointer to put property value.
+  * \param[in] functionName Name of caller function to be printed in error message.
+  * \param[in] paramName Name of parameter to be printed in error message. */
+inline const bool hamamatsu::checkGet(int32 iProp, double *pValue, const char* functionName, const char* paramName) {
+
+    char operation[256];
+    epicsSnprintf(operation, sizeof(operation), "dcamprop_getvalue(hdcam, %s)", paramName);
+
+    DCAMERR err = dcamprop_getvalue( this->hdcam, iProp, pValue );
+    return checkErrAndPrint(functionName, err, operation);
 
 }
 
@@ -104,23 +185,19 @@ BOOL hamamatsu::copy_targetarea( HDCAM hdcam, int32 iFrame, void* buf, int32 row
     
     // access image
     err = dcambuf_copyframe( hdcam, &bufframe );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcambuf_copyframe()" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcambuf_copyframe()") )
         return FALSE;
-    }
 #else
     // access image
     err = dcambuf_lockframe( hdcam, &bufframe );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcambuf_lockframe()" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcambuf_lockframe()") )
         return FALSE;
-    }
 
     if( bufframe.type != DCAM_PIXELTYPE_MONO16 )
     {
-        printf( "not implement pixel type\n" );
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: Pixel type not implemented. Only available pixel type is DCAM_PIXELTYPE_MONO16.\n",
+            driverName, __FUNCTION__);
         return FALSE;
     }
 
@@ -158,9 +235,7 @@ void hamamatsu::get_image_information( HDCAM hdcam, int32& pixeltype, int32& wid
 
     // image pixel type(DCAM_PIXELTYPE_MONO16, MONO8, ... )
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, &v );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:IMAGE_PIXELTYPE" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcamprop_getvalue(..., IDPROP:IMAGE_PIXELTYPE)") ) {
         return;
     }
     else
@@ -168,9 +243,7 @@ void hamamatsu::get_image_information( HDCAM hdcam, int32& pixeltype, int32& wid
 
     // image width
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_IMAGE_WIDTH, &v );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:IMAGE_WIDTH" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcamprop_getvalue(..., IDPROP:IMAGE_WIDTH)") ) {
         return;
     }
     else
@@ -178,9 +251,7 @@ void hamamatsu::get_image_information( HDCAM hdcam, int32& pixeltype, int32& wid
 
     // image row bytes
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_IMAGE_ROWBYTES, &v );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:IMAGE_ROWBYTES" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcamprop_getvalue(..., IDPROP:IMAGE_ROWBYTES)") ) {
         return;
     }
     else
@@ -188,9 +259,7 @@ void hamamatsu::get_image_information( HDCAM hdcam, int32& pixeltype, int32& wid
 
     // image height
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_IMAGE_HEIGHT, &v );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:IMAGE_HEIGHT" );
+    if( checkErrAndPrint(__FUNCTION__, err, "dcamprop_getvalue(..., IDPROP:IMAGE_HEIGHT)") ) {
         return;
     }
     else
@@ -224,15 +293,15 @@ void hamamatsu::sample_access_image( HDCAM hdcam )
 
     // get number of captured image
     err = dcamcap_transferinfo( hdcam, &captransferinfo );
-    if( failed(err) )
-    {
-        dcamcon_show_dcamerr( hdcam, err, "dcamcap_transferinfo()" );
+    if( checkErrAndPrint(__FUNCTION__, err, "dcamcap_transferinfo()") ) {
         return;
     }
 
     if( captransferinfo.nFrameCount < 1 )
     {
-        printf( "not capture image\n" );
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_WARNING,
+                "%s:%s: No images captured. nFrameCount: %u\n",
+                driverName, functionName, captransferinfo.nFrameCount);
         return;
     }
 
@@ -347,8 +416,7 @@ void hamamatsu::hamaAcquire()
         status |= getIntegerParam(ADSizeY,        &sizeY);
         
         getDoubleParam(ADAcquireTime,     &exposureTime);
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_EXPOSURETIME, &exposureTime );
-        printf("\nexposure time %f", exposureTime);
+        checkSetGet(DCAM_IDPROP_EXPOSURETIME, &exposureTime, __FUNCTION__, "DCAM_IDPROP_EXPOSURETIME");
         setDoubleParam(ADAcquireTime, exposureTime);
 
         /*
@@ -358,54 +426,38 @@ void hamamatsu::hamaAcquire()
         {
             dcamcon_show_dcamerr( hdcam, err, "dcamprop_setgetvalue() for DCAM_IDPROP_INTERNALFRAMERATE" );
         }
-        printf("\nacquire period %f", acquirePeriod);
         setDoubleParam(ADAcquirePeriod, acquirePeriod);
         */
 
         double tempHPOS=(double)minX;
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYHPOS, &tempHPOS );
-        if( failed(err) ) {
-            printf("\n");
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYHPOS" );
+        if ( checkSetGet(DCAM_IDPROP_SUBARRAYHPOS, &tempHPOS, functionName, "DCAM_IDPROP_SUBARRAYHPOS") ) {
             acquire=0;
             hamaAbortAcquisition();
             continue;
         }
         
-        double tempVPOS=(double)minY; 
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYVPOS, &tempVPOS );
-        if( failed(err) ) {
-            printf("\n");
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYVPOS" );
+        double tempVPOS=(double)minY;
+        if ( checkSetGet(DCAM_IDPROP_SUBARRAYVPOS, &tempVPOS, functionName, "DCAM_IDPROP_SUBARRAYVPOS") ) {
             acquire=0;
             hamaAbortAcquisition();
             continue;   
         }
         
-        double tempHSIZE=(double)sizeX; 
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYHSIZE, &tempHSIZE );
-        if( failed(err) ) {
-            printf("\n");
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYHSIZE" );
+        double tempHSIZE=(double)sizeX;
+        if ( checkSetGet(DCAM_IDPROP_SUBARRAYHSIZE, &tempHSIZE, functionName, "DCAM_IDPROP_SUBARRAYHSIZE") ) {
             acquire=0;
             hamaAbortAcquisition();
             continue;           
         }
 
         double tempVSIZE=(double)sizeY;
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYVSIZE, &tempVSIZE );
-        if( failed(err) ) {
-            printf("\n");
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYVSIZE" );
+        if ( checkSetGet(DCAM_IDPROP_SUBARRAYVSIZE, &tempVSIZE, functionName, "DCAM_IDPROP_SUBARRAYVSIZE") ) {
             acquire=0;
             hamaAbortAcquisition();
             continue;
         }
         
-        err = dcamprop_setvalue( hdcam, DCAM_IDPROP_SUBARRAYMODE, DCAMPROP_MODE__ON );
-        if( failed(err) ) {
-            printf("\n");
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:SUBARRAYMODE, VALUE:ON" );
+        if ( checkSet(DCAM_IDPROP_SUBARRAYMODE, DCAMPROP_MODE__ON, functionName, "IDPROP:SUBARRAYMODE") ) {
             acquire=0;
             hamaAbortAcquisition();
             continue;
@@ -414,33 +466,25 @@ void hamamatsu::hamaAcquire()
             setIntegerParam (ADSizeX,  (int)tempHSIZE);
             setIntegerParam (ADMinY,   (int)tempVPOS);
             setIntegerParam (ADSizeY,  (int)tempVSIZE);
-            
-            printf( "\nminX: %f", tempHPOS);
-            printf( "\nsizeX: %f", tempHSIZE );
-            printf( "\nminY: %f", tempVPOS );
-            printf( "\nsizeY: %f", tempVSIZE );
         }
         callParamCallbacks();
         
-        // check whether the camera supports binning or not.
-        double binning=(double)binX;
-        err = dcamprop_queryvalue( hdcam, DCAM_IDPROP_BINNING, &binning );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_queryvalue()", "IDPROP:BINNING, VALUE:%d", binning ); 
-        }
-    
         // set binning value to the camera
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_BINNING, &binning );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:BINNING, VALUE:%d", binning ); 
+        double binning=(double)binX;
+        if ( checkSetGet(DCAM_IDPROP_BINNING, &binning, functionName, "IDPROP:BINNING") ) {
             binning=1;
-            err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_BINNING, &binning );
+            checkSetGet(DCAM_IDPROP_BINNING, &binning, functionName, "IDPROP:BINNING");
             setIntegerParam (ADBinX,     (int)binning);
             setIntegerParam (ADBinY,     (int)binning);
         } else {
             setIntegerParam (ADBinX,     (int)binning);
-            printf( "\nbinX: %f", binning );
         }
+
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+            "%s:%s: MinX: %d, SizeX: %d, MinY: %d, SizeY: %d, binning: %d\n",
+            driverName, functionName, (int)tempHPOS, (int)tempHSIZE,
+            (int)tempVPOS, (int)tempVSIZE, (int)binning);
+
         setIntegerParam(ADStatus, ADStatusAcquire);
 
         /* Open the shutter */
@@ -453,24 +497,18 @@ void hamamatsu::hamaAcquire()
         waitopen.hdcam    = hdcam;
     
         err = dcamwait_open( &waitopen );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamwait_open()" );
-        } else {
-            //HDCAMWAIT hwait = waitopen.hwait;
-            hwait = waitopen.hwait;
+        if ( !checkErrAndPrint(__FUNCTION__, err, "dcamwait_open()") ) {
+            this->hwait = waitopen.hwait;
     
             // allocate buffer
             int32 number_of_buffer = 10;
             err = dcambuf_alloc( hdcam, number_of_buffer );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcambuf_alloc()" );
-            } else {
+            if ( !checkErrAndPrint(__FUNCTION__, err, "dcambuf_alloc()") ) {
                 // start capture
                 err = dcamcap_start( hdcam, DCAMCAP_START_SEQUENCE );
-                if( failed(err) ) {
-                    dcamcon_show_dcamerr( hdcam, err, "dcamcap_start()" );
-                } else  {
-                    printf( "\nStart Capture\n" );
+                if ( !checkErrAndPrint(__FUNCTION__, err, "dcamcap_start()") ) {
+                    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+                        "%s:%s: Starting capture.\n", driverName, functionName);
                     // set wait param
                     DCAMWAIT_START waitstart;
                     memset( &waitstart, 0, sizeof(waitstart) );
@@ -486,8 +524,7 @@ void hamamatsu::hamaAcquire()
                             this->unlock();
                             err = dcamwait_start( hwait, &waitstart );
                             this->lock();
-                            if( failed(err) ) {
-                                dcamcon_show_dcamerr( hdcam, err, "dcamwait_start()" );
+                            if ( checkErrAndPrint(__FUNCTION__, err, "dcamwait_start()") ) {
                                 setStringParam(ADStatusMessage, "Stopped acquisition");
                                 setIntegerParam(ADStatus, ADStatusIdle);
                                 callParamCallbacks();
@@ -496,7 +533,6 @@ void hamamatsu::hamaAcquire()
                                 setIntegerParam(ADAcquire, acquire);
                                 asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
                                       "%s:%s: acquisition completed\n", driverName, functionName);
-                                
                                 
                                 dcamcap_stop( hdcam );
                                 
@@ -553,8 +589,7 @@ void hamamatsu::hamaAcquire()
                             this->unlock();
                             err = dcamwait_start( hwait, &waitstart );
                             this->lock();
-                            if( failed(err) ) {
-                                dcamcon_show_dcamerr( hdcam, err, "dcamwait_start()" );
+                            if ( checkErrAndPrint(__FUNCTION__, err, "dcamwait_start()") ) {
                                 setStringParam(ADStatusMessage, "Stopped acquisition");
                                 setIntegerParam(ADStatus, ADStatusIdle);
                                 callParamCallbacks();
@@ -614,8 +649,7 @@ void hamamatsu::hamaAcquire()
                         this->unlock();
                         err = dcamwait_start( hwait, &waitstart );
                         this->lock();
-                        if( failed(err) ) {
-                            dcamcon_show_dcamerr( hdcam, err, "dcamwait_start()" );
+                        if ( checkErrAndPrint(__FUNCTION__, err, "dcamwait_start()") ) {
                             
                             setStringParam(ADStatusMessage, "Stopped acquisition");
                             setIntegerParam(ADStatus, ADStatusIdle);
@@ -670,7 +704,9 @@ void hamamatsu::hamaAcquire()
                     
                     // stop capture
                     dcamcap_stop( hdcam );
-                    printf( "Stop Capture\n" );
+                    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+                        "%s:%s: Stopped acquisition.\n",
+                        driverName, functionName);
                     setIntegerParam(ADAcquire, 0);
                     callParamCallbacks();
                 }
@@ -692,12 +728,12 @@ void hamamatsu::hamaAcquire()
   * \param[in] value Value to write. */
 asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
+    const char *functionName = "writeInt32";
     int function = pasynUser->reason;
     int adstatus;
     int acquiring;
     int imageMode;
     asynStatus status = asynSuccess;
-    DCAMERR err;
 
     /* Ensure that ADStatus is set correctly before we set ADAcquire.*/
     getIntegerParam(ADStatus, &adstatus);
@@ -714,15 +750,10 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
             /* Send an event to wake up the simulation task.
              * It won't actually start generating new images until we release the lock below */
             epicsEventSignal(startEventId_); 
-            printf( "Start Capture pressed\n" );
         }
         if (!value && acquiring) {
             /* This was a command to stop acquisition */
             /* Send the stop event */
-            //epicsEventSignal(stopEventId_); 
-            // stop capture
-            printf( "Stop Capture pressed\n" );
-            
             
             //abort any waiting
             dcamwait_abort( hwait);
@@ -736,12 +767,6 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
             /* Send the stop event */
             epicsEventSignal(stopEventId_);
             callParamCallbacks();
-
-            //this->unlock();
-            //status = epicsEventWaitWithTimeout(stopEventId_, MIN_DELAY);
-            //callParamCallbacks();
-            //this->lock();
-            //epicsThreadSleep(0.01);
         }
 
     } else if (function == NDDataType) {
@@ -749,120 +774,79 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
         getIntegerParam(NDDataType, &dataType);
         if (dataType ==0 || dataType ==1)//0= int8, 1=uint8
         {
-            printf( "\nInt 8\n");
-            //getDoubleParam(ADAcquireTime,     &exposureTime);
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO8 );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:IMAGE_PIXELTYPE, VALUE:MONO8" );
-                err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16 );
-                dataType=3;
-                setIntegerParam(NDDataType, dataType);
+            if ( checkSet(DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO8, functionName, "IDPROP:IMAGE_PIXELTYPE") ) {
+                checkSet( DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16, functionName, "IDPROP:IMAGE_PIXELTYPE" );
+                setIntegerParam(NDDataType, 3);
             }
-        } else// if (dataType ==2 || dataType ==3) 2=int16, 3=uint16
+        } else// 2=int16, 3=uint16
         {
-            printf( "\nInt 16\n");
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16 );
+            checkSet(DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16, functionName, "DCAM_IDPROP_IMAGE_PIXELTYPE");
         }
         callParamCallbacks();
     }
     
     else if (function == HamaRegionReset) {
-        //printf ("\nHama Reset: %d", value);
         double tempResetVal=0;
-        err = dcamprop_setvalue( hdcam, DCAM_IDPROP_SUBARRAYMODE, DCAMPROP_MODE__OFF );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:SUBARRAYMODE, VALUE:OFF" );
-        }
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYHPOS, &tempResetVal );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYHPOS" );
-        } else {
+        checkSet( DCAM_IDPROP_SUBARRAYMODE, DCAMPROP_MODE__OFF, functionName, "IDPROP:SUBARRAYMODE" );
+        if ( !checkSetGet( DCAM_IDPROP_SUBARRAYHPOS, &tempResetVal, functionName, "DCAM_IDPROP_SUBARRAYHPOS" ) ) {
             setIntegerParam (ADMinX,    (int)tempResetVal);
-            printf( "\nminX reset: %f", tempResetVal);
         }
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYVPOS, &tempResetVal );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYVPOS" );
-        } else {
+        if ( !checkSetGet( DCAM_IDPROP_SUBARRAYVPOS, &tempResetVal, functionName, "DCAM_IDPROP_SUBARRAYVPOS" ) ) {
             setIntegerParam (ADMinY,    (int)tempResetVal);
-            printf( "\nminY reset: %f", tempResetVal);
         }
         int tempSensorSize; 
         getIntegerParam(ADMaxSizeX,     &tempSensorSize);
         double tempMax=(double)tempSensorSize;
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYHSIZE, &tempMax );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYHSIZE" );
-        } else {
+        if ( !checkSetGet(DCAM_IDPROP_SUBARRAYHSIZE, &tempMax, functionName, "DCAM_IDPROP_SUBARRAYHSIZE") ) {
             setIntegerParam (ADSizeX, (int)tempMax);
-            printf( "\nSizeX reset: %f", tempMax );
         }
         callParamCallbacks();
-        //tempVal=(double)sizeY; 
         getIntegerParam(ADMaxSizeY,     &tempSensorSize);
         tempMax=(double)tempSensorSize;
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_SUBARRAYVSIZE, &tempMax );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_SUBARRAYVSIZE" );
-        } else {
+        if ( !checkSetGet(DCAM_IDPROP_SUBARRAYVSIZE, &tempMax, functionName, "DCAM_IDPROP_SUBARRAYVSIZE") ) {
             setIntegerParam (ADSizeY,  (int)tempMax);
-            printf( "\nSizeY reset: %f", tempMax);
         }
-        //setIntegerParam(HamaRegionReset,0);
+
         callParamCallbacks();
-        //printf ("\nHama Reset after: %d", HamaRegionReset);
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: HamaRegionReset finished. " 
+            "minX: %f, minY: %f, sizeX: %f, sizeY: %f\n", 
+            driverName, functionName, tempResetVal, tempResetVal, tempMax, tempMax);
     }
     
     else if (function == HamaTriggerSource) { 
         //0: internal 
         //1: external 
-        //2: software 
-        printf("\nTrigger Source: %d",value);
+        //2: software
+        // We could implement checkSet(DCAM_IDPROP_TRIGGERSOURCE, value-1 ), but that counts with 
+        // the premise that the API would never change...
         callParamCallbacks();
-        if (value ==0) {
-            // set internal trigger mode
-            //tempTrigger=1;
-            //printf("\nTrigger temp: %d",tempTrigger);
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__INTERNAL );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERSOURCE, VALUE:Internal" );
-            }
+        if (value == 0) {
+            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__INTERNAL, functionName, "IDPROP:TRIGGERSOURCE");
         }
-        else if (value ==1) {
-            // set external trigger mode
-            //tempTrigger=2;
-            //printf("\nTrigger temp: %d",tempTrigger);
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__EXTERNAL );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERSOURCE, VALUE:External" );
-            }
+        else if (value == 1) {
+            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__EXTERNAL, functionName, "IDPROP:TRIGGERSOURCE");
         }
-        else if (value ==2) {
-            // set software trigger mode
-            //tempTrigger=3;
-            //printf("\nTrigger temp: %d",tempTrigger);
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__SOFTWARE );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERSOURCE, VALUE:Software" );
-            }
+        else if (value == 2) {
+            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__SOFTWARE, functionName, "IDPROP:TRIGGERSOURCE");
+        } else {
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger source option. "
+                " Available options are 0 (internal), 1 (external) and 2 (software)\n",
+                driverName, functionName);
         }
     }
 
     else if (function == HamaTriggerMode) { 
         //0:normal
         //1:start
-        printf("\nTrigger Mode: %d",value);
-        if (value ==0) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__NORMAL );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGER_MODE, VALUE:Normal" );
-            }
+        if (value == 0) {
+            checkSet(DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__NORMAL, functionName, "IDPROP:TRIGGER_MODE");
         }
-        else if (value ==1) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__START );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGER_MODE, VALUE:Start" );
-            }
+        else if (value == 1) {
+            checkSet(DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__START, functionName, "IDPROP:TRIGGER_MODE");
+        } else {
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger mode option. "
+                " Available options are 0 (normal) and 1 (start).\n",
+                driverName, functionName);
         }
         callParamCallbacks();
     }
@@ -871,24 +855,18 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
         //0: edge
         //1: level
         //2: syncreadout
-        printf("\nTrigger Active: %d",value);
         if (value ==0) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__EDGE );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERACTIVE, VALUE:EDGE" );
-            }
+            checkSet(DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__EDGE, functionName, "IDPROP:TRIGGERACTIVE");
         }
-        else if (value ==1) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__LEVEL );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERACTIVE, VALUE:LEVEL" );
-            }
+        else if (value == 1) {
+            checkSet(DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__LEVEL, functionName, "IDPROP:TRIGGERACTIVE");
         }
-        else if (value ==2) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__SYNCREADOUT );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERACTIVE, VALUE:SYNCREADOUT" );
-            }
+        else if (value == 2) {
+            checkSet(DCAM_IDPROP_TRIGGERACTIVE, DCAMPROP_TRIGGERACTIVE__SYNCREADOUT, functionName, "IDPROP:TRIGGERACTIVE");
+        } else {
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger active option. "
+                " Available options are 0 (edge), 1 (level) and 2 (syncreadout).\n",
+                driverName, functionName);
         }
         callParamCallbacks();
     }
@@ -896,23 +874,19 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
     else if (function == HamaTriggerPolarity) { 
         //0: negative
         //1: positive
-        printf("\nTrigger Polarity: %d",value);
-        if (value ==0) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERPOLARITY, DCAMPROP_TRIGGERPOLARITY__NEGATIVE );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERPOLARITY, VALUE:NEGATIVE" );
-            }
+        if (value == 0) {
+            checkSet(DCAM_IDPROP_TRIGGERPOLARITY, DCAMPROP_TRIGGERPOLARITY__NEGATIVE, functionName, "IDPROP:TRIGGERPOLARITY");
         }
-        else if (value ==1) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_TRIGGERPOLARITY, DCAMPROP_TRIGGERPOLARITY__POSITIVE );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:TRIGGERPOLARITY, VALUE:POSITIVE" );
-            }
+        else if (value == 1) {
+            checkSet(DCAM_IDPROP_TRIGGERPOLARITY, DCAMPROP_TRIGGERPOLARITY__POSITIVE, functionName, "IDPROP:TRIGGERPOLARITY");
+        } else {
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger polarity option. "
+                " Available options are 0 (negative) and 1 (positive).\n",
+                driverName, functionName);
         }
     }
 
-    else if (function ==HamaFireTrigger) {
-        printf("\nFire Trigger");
+    else if (function == HamaFireTrigger) {
         dcamcap_firetrigger( hdcam );
         int triggermode;
         getIntegerParam(HamaTriggerMode, &triggermode);
@@ -923,7 +897,6 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     
     else if (function == HamaTriggerTimes) { 
-        printf("\nTrigger Times: %d",value);
         int tempTrigger; 
         getIntegerParam(HamaTriggerTimes,     &tempTrigger);
         double tempTriggerTimes=(double)tempTrigger;
@@ -933,12 +906,8 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
         if (tempTriggerTimes>10000) {
             tempTriggerTimes=10000;
         }
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_TRIGGERTIMES, &tempTriggerTimes );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_TriggerTimes" );
-        } else {
+        if ( !checkSetGet(DCAM_IDPROP_TRIGGERTIMES, &tempTriggerTimes, functionName, "DCAM_IDPROP_TriggerTimes") ) {
             setIntegerParam (HamaTriggerTimes, (int)tempTriggerTimes);
-            printf( "\nTrigger Times after: %f", tempTriggerTimes );
         }
         callParamCallbacks();
     }
@@ -949,24 +918,13 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     
     else if (function == HamaReadoutSpeed) { 
-        //printf("\nReadout speed value: %d",value);
-        if (value ==1) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_READOUTSPEED, DCAMPROP_READOUTSPEED__SLOWEST );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:READOUTSPEED, VALUE:1" );
-            }
-        } else if (value ==2) {
-            err = dcamprop_setvalue( hdcam, DCAM_IDPROP_READOUTSPEED, DCAMPROP_READOUTSPEED__FASTEST );
-            if( failed(err) ) {
-                dcamcon_show_dcamerr( hdcam, err, "dcamprop_setvalue()", "IDPROP:READOUTSPEED, VALUE:2" );
-            }
+        if (value == 1) {
+            checkSet(DCAM_IDPROP_READOUTSPEED, DCAMPROP_READOUTSPEED__SLOWEST, functionName, "IDPROP:READOUTSPEED");
+        } else if (value == 2) {
+            checkSet(DCAM_IDPROP_READOUTSPEED, DCAMPROP_READOUTSPEED__FASTEST, functionName, "IDPROP:READOUTSPEED");
         }
         double readSpeed;
-        err = dcamprop_getvalue( hdcam, DCAM_IDPROP_READOUTSPEED, &readSpeed );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:READOUTSPEED" );
-        } else {
-            printf("\nReadout speed: %f",readSpeed);
+        if ( !checkGet(DCAM_IDPROP_READOUTSPEED, &readSpeed, functionName, "IDPROP:READOUTSPEED") ) {
             setIntegerParam(HamaReadoutSpeed, (int)readSpeed);
         }
     }
@@ -1000,7 +958,7 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
-    DCAMERR err;
+    const char *functionName = "writeFloat64";
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
@@ -1009,7 +967,6 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     /* Changing any of the simulation parameters requires recomputing the base image */
     
     if (function == HamaTriggerDelay) { 
-        printf("\nTrigger Delay: %f",value);
         double tempDelay; 
         getDoubleParam(HamaTriggerDelay,     &tempDelay);
         if (tempDelay<0) {
@@ -1018,24 +975,16 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
         if (tempDelay>10) {
             tempDelay=10;
         }
-        err = dcamprop_setgetvalue( hdcam, DCAM_IDPROP_TRIGGERDELAY, &tempDelay );
-        if( failed(err) ) {
-            dcamcon_show_dcamerr( hdcam, err, "DCAM_IDPROP_TRIGGERDELAY" );
-        } else {
+        if ( !checkSetGet(DCAM_IDPROP_TRIGGERDELAY, &tempDelay, functionName, "DCAM_IDPROP_TRIGGERDELAY") ) {
             setDoubleParam (HamaTriggerDelay,     tempDelay);
-            printf( "\nDelay after: %f", tempDelay );
         }
         callParamCallbacks();
     }
     /*Set exposure time when camera is live*/
     else if (function == ADAcquireTime) {
         double exposure = value;
-        err = dcamprop_setgetvalue(hdcam, DCAM_IDPROP_EXPOSURETIME, &exposure);
-        if (failed(err)) {
-            dcamcon_show_dcamerr(hdcam, err, "DCAM_IDPROP_EXPOSURETIME");
-        } else {
+        if ( !checkSetGet(DCAM_IDPROP_EXPOSURETIME, &exposure, functionName, "DCAM_IDPROP_EXPOSURETIME") ) {
             setDoubleParam(ADAcquireTime, exposure); // Store actual value applied
-            printf("\nExposure after set: %f", exposure);
         }
         callParamCallbacks();
     }
@@ -1059,11 +1008,11 @@ asynStatus hamamatsu::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 
 void hamamatsu::updateCoolerInfo(void)
 {
+    const char *functionName = "updateCoolerInfo";
     double tempCoolerStatus; 
     DCAMERR err;
 
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORCOOLERSTATUS, &tempCoolerStatus);
-    //setStringParam (HamaSensorCoolerStatus, std::to_string(tempCoolerStatus).c_str() );
 
     char text[64];
     DCAMPROP_VALUETEXT valueText;
@@ -1074,24 +1023,20 @@ void hamamatsu::updateCoolerInfo(void)
     valueText.text    = text;
     valueText.textbytes = sizeof(text);
     err = dcamprop_getvaluetext( hdcam, &valueText );
-    if( failed(err) ) {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORCOOLERSTATUS" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcamprop_getvaluetext(..., IDPROP:SENSORCOOLERSTATUS)") ) {
         setStringParam (HamaSensorCoolerStatus, "Unknown" );
     } else {
         setStringParam (HamaSensorCoolerStatus, valueText.text );
     }
     
-    double temperature; 
-    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SENSORTEMPERATURE, &temperature);
-    if( failed(err) ) {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvaluetext()", "IDPROP:SENSORTEMPERATURE" );
+    double temperature;
+    if ( checkGet(DCAM_IDPROP_SENSORTEMPERATURE, &temperature, functionName, "IDPROP:SENSORTEMPERATURE") ) {
         setDoubleParam (ADTemperatureActual, 0. );
     } else  {
         setDoubleParam (ADTemperatureActual, temperature );
     }
 }
 
-
 /** Report status of the driver.
   * Prints details about the driver if details>0.
   * It then calls the ADDriver::report() method.
@@ -1117,30 +1062,24 @@ void hamamatsu::report(FILE *fp, int details)
 //on exit do the following.
 void hamamatsu::hamaExit()
 {
-    printf ("/n HamaExit, exiting\n");
     dcamapi_uninit();
 }
 
 //deconstructor
 hamamatsu::~hamamatsu()
 {
-    //const char *functionName = "~hamamatsu";
-    printf ("/n deconstructor, exiting\n");
     dcamapi_uninit();
 }
 
 void hamamatsu::hamaAbortAcquisition()
 {
     const char* functionName = "hamaAbortAcquisition";
-    //asynStatus status = asynSuccess;
-    printf ("\nAborting Acquisition\n");    
     
     setStringParam(ADStatusMessage, "Stopped acquisition");
     setIntegerParam(ADStatus, ADStatusIdle);
     callParamCallbacks();
 
-    int acquire = 0;
-    setIntegerParam(ADAcquire, acquire);
+    setIntegerParam(ADAcquire, 0);
     asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
           "%s:%s: acquisition completed\n", driverName, functionName);
 
@@ -1175,19 +1114,20 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
 
 {
     int status = asynSuccess;
-    //char versionString[20];
     const char *functionName = "hamamatsu";
 
-    /* Create the epicsEvents for signaling to the simulate task when acquisition starts and stops */
+    /* Create the epicsEvents for signaling to the acquisition task when acquisition starts and stops */
     startEventId_ = epicsEventCreate(epicsEventEmpty);
     if (!startEventId_) {
-        printf("%s:%s epicsEventCreate failure for start event\n",
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s epicsEventCreate failure for start event\n",
             driverName, functionName);
         return;
     }
     stopEventId_ = epicsEventCreate(epicsEventEmpty);
     if (!stopEventId_) {
-        printf("%s:%s epicsEventCreate failure for stop event\n",
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s epicsEventCreate failure for stop event\n",
             driverName, functionName);
         return;
     }
@@ -1210,10 +1150,7 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     createParam(HamaReadoutSpeedString,       asynParamInt32, &HamaReadoutSpeed);
     createParam(HamaSystemAliveString,        asynParamInt32, &HamaSystemAlive);
 
-    /* Set some default values for parameters 
-    */
-
-    //Setting Hamamatsu Defaults
+    /* Set some default values for parameters */
     status |= setIntegerParam(HamaRegionReset,0);
     status |= setIntegerParam(HamaTriggerSource,0);
     status |= setIntegerParam(HamaTriggerMode,0);
@@ -1222,40 +1159,38 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     status |= setIntegerParam(HamaFireTrigger,0);
     status |= setIntegerParam(HamaTriggerTimes,1);
     status |= setDoubleParam(HamaTriggerDelay,0);
-    char coolerStatusString [256]= "Unknown";
-    status |= setStringParam(HamaSensorCoolerStatus,coolerStatusString);
+    status |= setStringParam(HamaSensorCoolerStatus,"Unknown");
     status |= setIntegerParam(HamaReadoutSpeed,2);
     
     if (status) {
-        printf("%s: unable to set camera parameters\n", functionName);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s Unable to set camera parameters.\n", driverName, functionName);
         return;
     }
 
     DCAMERR err;
-    printf( "\n\nHama Init\n\n");
     memset( &apiinit, 0, sizeof(apiinit) );
     apiinit.size    = sizeof(apiinit);
     
     err = dcamapi_init( &apiinit );
-    if( failed(err) ) {
-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "Error calling dcamapi_init=0x%x\n", err);
-        dcamcon_show_dcamerr( NULL, err, "dcamapi_init()" );
+    if ( checkErrAndPrint(__FUNCTION__, err, "dcamapi_init()") ) {
         dcamapi_uninit();
         return;
     }
-    printf( "\n\nDCAM initialized\n\n");
+
     int32    nDevice = apiinit.iDeviceCount;
-    printf( "dcamapi_init() found %d device(s).\n", nDevice );
+    asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+            "%s:%s DCAM initialized. dcamapi_init() found %d devices\n",
+            driverName, functionName, nDevice);
     // open specified camera
     int32 iDevice;
     for( iDevice = 0; iDevice < nDevice; iDevice++ ) {
-        printf( "#%d: ", iDevice );
         DCAMDEV_OPEN    devopen;
         memset( &devopen, 0, sizeof(devopen) );
         devopen.size    = sizeof(devopen);
         devopen.index    = iDevice;
         err = dcamdev_open( &devopen );
-        if( ! failed(err) ) {
+        if ( !checkErrAndPrint(__FUNCTION__, err, "dcamdev_open()", "index is %d\n", iDevice) ) {
             hdcam = devopen.hdcam;
             dcamcon_show_dcamdev_info( hdcam );
             DCAMDEV_STRING    strStruct;
@@ -1267,11 +1202,9 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
             strStruct.iString=DCAM_IDSTR_MODEL;
             dcamdev_getstring(hdcam, &strStruct);
             dcamdev_close( hdcam );
-        } else {
-            dcamcon_show_dcamerr( (HDCAM)(intptr_t)iDevice, err, "dcamdev_open()", "index is %d\n", iDevice );
         }
     }
-    printf( "\n\nOpen\n\n");
+
     // open specified camera
     DCAMDEV_OPEN    devopen;
     memset( &devopen, 0, sizeof(devopen) );
@@ -1324,22 +1257,16 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     double tempSensorSize; 
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SUBARRAYHSIZE, &tempSensorSize );
     setIntegerParam (ADMaxSizeX, (int)tempSensorSize);
-    printf( "\nMaxsizeX: %f", tempSensorSize );
-    
-    //tempVal=(double)sizeY; 
+
     err = dcamprop_getvalue( hdcam, DCAM_IDPROP_SUBARRAYVSIZE, &tempSensorSize );
     setIntegerParam (ADMaxSizeY, (int)tempSensorSize);
-    printf( "\nMaxsizeY: %f", tempSensorSize);
     
     //get pixel type
     int dataType;
     getIntegerParam(NDDataType, &dataType);
-    if (dataType ==0 || dataType ==1) {
-        printf( "\nInt 8\n");
-        //getDoubleParam(ADAcquireTime,     &exposureTime);
+    if (dataType ==0 || dataType ==1) {  // @TODO: implement correct data types
         err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO8 );
-    }  else { // if (dataType ==2 || dataType ==3)
-        printf( "\nInt 16\n");
+    }  else {
         err = dcamprop_setvalue( hdcam, DCAM_IDPROP_IMAGE_PIXELTYPE, DCAM_PIXELTYPE_MONO16 );   
     }
     
@@ -1347,11 +1274,7 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
          
     //get readout speed
     double readSpeed;
-    err = dcamprop_getvalue( hdcam, DCAM_IDPROP_READOUTSPEED, &readSpeed );
-    if( failed(err) ) {
-        dcamcon_show_dcamerr( hdcam, err, "dcamprop_getvalue()", "IDPROP:READOUTSPEED" );
-    } else {
-        printf("\nReadout speed: %f",readSpeed);
+    if ( !checkGet(DCAM_IDPROP_READOUTSPEED, &readSpeed, functionName, "IDPROP:READOUTSPEED") ) {
         setIntegerParam(HamaReadoutSpeed, (int)readSpeed);
     }
         
@@ -1362,8 +1285,9 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
                                 (EPICSTHREADFUNC)hamaTaskC,
                                 this) == NULL);
     if (status) {
-        printf("%s:%s epicsThreadCreate failure for image task\n",
-            driverName, functionName);
+        asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+            "%s:%s: epicsThreadCreate failure for image task. Error code: %d\n",
+            driverName, functionName, status);
         return;
     }
     
