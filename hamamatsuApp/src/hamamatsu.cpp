@@ -813,41 +813,13 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
             driverName, functionName, tempResetVal, tempResetVal, tempMax, tempMax);
     }
     
-    else if (function == HamaTriggerSource) { 
-        //0: internal 
-        //1: external 
-        //2: software
-        // We could implement checkSet(DCAM_IDPROP_TRIGGERSOURCE, value-1 ), but that counts with 
-        // the premise that the API would never change...
+    else if (function == HamaTriggerSource) {
         callParamCallbacks();
-        if (value == 0) {
-            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__INTERNAL, functionName, "IDPROP:TRIGGERSOURCE");
-        }
-        else if (value == 1) {
-            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__EXTERNAL, functionName, "IDPROP:TRIGGERSOURCE");
-        }
-        else if (value == 2) {
-            checkSet(DCAM_IDPROP_TRIGGERSOURCE, DCAMPROP_TRIGGERSOURCE__SOFTWARE, functionName, "IDPROP:TRIGGERSOURCE");
-        } else {
-            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger source option. "
-                " Available options are 0 (internal), 1 (external) and 2 (software)\n",
-                driverName, functionName);
-        }
+        checkSet(DCAM_IDPROP_TRIGGERSOURCE, value, functionName, "IDPROP:TRIGGERSOURCE");
     }
 
-    else if (function == HamaTriggerMode) { 
-        //0:normal
-        //1:start
-        if (value == 0) {
-            checkSet(DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__NORMAL, functionName, "IDPROP:TRIGGER_MODE");
-        }
-        else if (value == 1) {
-            checkSet(DCAM_IDPROP_TRIGGER_MODE, DCAMPROP_TRIGGER_MODE__START, functionName, "IDPROP:TRIGGER_MODE");
-        } else {
-            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid trigger mode option. "
-                " Available options are 0 (normal) and 1 (start).\n",
-                driverName, functionName);
-        }
+    else if (function == ADTriggerMode) {
+        checkSet(DCAM_IDPROP_TRIGGER_MODE, value, functionName, "IDPROP:TRIGGER_MODE");
         callParamCallbacks();
     }
 
@@ -889,7 +861,7 @@ asynStatus hamamatsu::writeInt32(asynUser *pasynUser, epicsInt32 value)
     else if (function == HamaFireTrigger) {
         dcamcap_firetrigger( hdcam );
         int triggermode;
-        getIntegerParam(HamaTriggerMode, &triggermode);
+        getIntegerParam(ADTriggerMode, &triggermode);
         if (triggermode == 1) { //trigger mode = start
              setIntegerParam(HamaTriggerSource,0);// internal
         }
@@ -1137,7 +1109,6 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     
     //Hamamatsu Trigger parameters
     createParam(HamaTriggerSourceString,      asynParamInt32,   &HamaTriggerSource);
-    createParam(HamaTriggerModeString,        asynParamInt32,   &HamaTriggerMode);
     createParam(HamaTriggerActiveString,      asynParamInt32,   &HamaTriggerActive);
     createParam(HamaTriggerPolarityString,    asynParamInt32,   &HamaTriggerPolarity);
     createParam(HamaFireTriggerString,        asynParamInt32,   &HamaFireTrigger);
@@ -1151,9 +1122,10 @@ hamamatsu::hamamatsu(const char *portName, int camIndex, int maxBuffers, size_t 
     createParam(HamaSystemAliveString,        asynParamInt32, &HamaSystemAlive);
 
     /* Set some default values for parameters */
+    status |= setIntegerParam(ADTriggerMode,0);
+
     status |= setIntegerParam(HamaRegionReset,0);
     status |= setIntegerParam(HamaTriggerSource,0);
-    status |= setIntegerParam(HamaTriggerMode,0);
     status |= setIntegerParam(HamaTriggerActive,0);
     status |= setIntegerParam(HamaTriggerPolarity,0);
     status |= setIntegerParam(HamaFireTrigger,0);

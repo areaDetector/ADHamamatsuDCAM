@@ -35,7 +35,6 @@ protected:
     int HamaRegionReset;
     #define FIRST_HAMA_DETECTOR_PARAM HamaRegionReset
     int HamaTriggerSource;
-    int HamaTriggerMode;
     int HamaTriggerActive;
     int HamaTriggerPolarity;
     int HamaFireTrigger;
@@ -68,7 +67,6 @@ private:
 
 #define HamaRegionResetString         "HamaRegionReset"
 #define HamaTriggerSourceString       "HamaTriggerSource"
-#define HamaTriggerModeString         "HamaTriggerMode"
 #define HamaTriggerActiveString       "HamaTriggerActive"
 #define HamaTriggerPolarityString     "HamaTriggerPolarity"
 #define HamaFireTriggerString         "HamaFireTrigger"

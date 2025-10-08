@@ -42,6 +42,30 @@ record(mbbi, "$(P)$(R)ColorMode_RBV")
    field(EIST, "")
 }
 
+# TriggerMode has a different meaning in hamamatsu.
+# Not to be confused with TriggerSource.
+record(mbbo, "$(P)$(R)TriggerMode")
+{
+   field(DESC, "Trigger mode (see also TriggerSource)")
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(ZRVL, "1")
+   field(ZRST, "Normal")
+   field(ONVL, "6")
+   field(ONST, "Start")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(mbbi, "$(P)$(R)TriggerMode_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(ZRST, "Normal")
+   field(ZRVL, "0")
+   field(ONST, "Start")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
+}
 
 ###################################################################################
 #hamamatsu specific records
@@ -52,55 +76,36 @@ record(bo, "$(P)$(R)HamaRegionReset")
    info(asyn:READBACK, "1")
 }
 
-record(mbbo, "$(P)$(R)HamaTriggerSource")
+record(mbbo, "$(P)$(R)TriggerSource")
 {
    field(PINI, "YES")
+   field(DESC, "Trigger source")
    field(DTYP, "asynInt32")
-   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerSource")
+   field(ZRVL, "1")
    field(ZRST, "Internal")
-   field(ZRVL, "0")
+   field(ONVL, "2")
    field(ONST, "External")
-   field(ONVL, "1")
+   field(TWVL, "3")
    field(TWST, "Software")
-   field(TWVL, "2")
+   field(THVL, "4")
    field(VAL,  "0")
+   field(THST, "Master pulse")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerSource")
    info(autosaveFields, "VAL")
 }
 
-record(mbbi, "$(P)$(R)HamaTriggerSource_RBV")
+record(mbbi, "$(P)$(R)TriggerSource_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerSource")
+   field(ZRVL, "1")
    field(ZRST, "Internal")
-   field(ZRVL, "0")
+   field(ONVL, "2")
    field(ONST, "External")
-   field(ONVL, "1")
+   field(TWVL, "3")
    field(TWST, "Software")
-   field(TWVL, "2")
-   field(SCAN, "I/O Intr")
-}
-
-record(mbbo, "$(P)$(R)HamaTriggerMode")
-{
-   field(PINI, "YES")
-   field(DTYP, "asynInt32")
-   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerMode")
-   field(ZRST, "Normal")
-   field(ZRVL, "0")
-   field(ONST, "Start")
-   field(ONVL, "1")
-   field(VAL,  "0")
-   info(autosaveFields, "VAL")
-}
-
-record(mbbi, "$(P)$(R)HamaTriggerMode_RBV")
-{
-   field(DTYP, "asynInt32")
-   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HamaTriggerMode")
-   field(ZRST, "Normal")
-   field(ZRVL, "0")
-   field(ONST, "Start")
-   field(ONVL, "1")
+   field(THVL, "4")
+   field(THST, "Master pulse")
    field(SCAN, "I/O Intr")
 }
 
