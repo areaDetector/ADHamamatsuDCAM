@@ -52,6 +52,11 @@ private:
     void get_image_information( HDCAM hdcam, int32& pixeltype, int32& width, int32& rowbytes, int32& height );
     void sample_access_image( HDCAM hdcam );
     void updateCoolerInfo(void);
+    static void getErrString(HDCAM handle, DCAMERR err, char* buf, unsigned int bufsize);
+    inline const bool checkErrAndPrint(const char* functionName, DCAMERR err, const char* paramName, ...);
+    inline const bool checkSetGet(int32 iProp, double* pValue, const char* functionName, const char* paramName);
+    inline const bool checkSet(int32 iProp, double pValue, const char* functionName, const char* paramName);
+    inline const bool checkGet(int32 iProp, double *pValue, const char* functionName, const char* paramName);
 
     /* Our data */
     epicsEventId startEventId_;
